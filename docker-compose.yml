@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  test-site:
+    image: shingohorie/centos7-apache-php73
+    container_name: test-site.local
+    volumes:
+      - ./test-site.local/html:/var/www/html
+      - ./test-site.local/conf/php.ini:/etc/php.ini
+      - ./test-site.local/conf/httpd.conf:/etc/httpd/conf/httpd.conf
+    restart: always
+    privileged:
+      true
+    command: 
+      /sbin/init
+    ports:
+      - "80"
+    environment:
+      VIRTUAL_HOST: test-site.local
+      VIRTUAL_PORT: 80
+      VIRTUAL_PROTO: http
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    restart: always
+    privileged: true
+    ports:
+      - "80:80"
+    volumes:                     
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: root
+      MYSQL_DATABASE: wordpress
+      TZ: Asia/Tokyo
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: password
+      VIRTUAL_HOST: phpmyadmin.test
+      VIRTUAL_PORT: 80
+      VIRTUAL_PROTO: http
+    restart: always
+    depends_on:
+      - mysql
